@@ -1,6 +1,7 @@
 from google.cloud import automl_v1beta1
 
 
+# 'content' is base-64-encoded image data.
 def get_prediction(content, project_id, model_id):
     prediction_client = automl_v1beta1.PredictionServiceClient()
 
