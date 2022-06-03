@@ -1,6 +1,20 @@
+import base64
+from io import BytesIO
+
+import numpy as np
 import streamlit as st
 from PIL import Image
-import numpy as np
+
+from prediction import get_prediction
+
+
+def pil_base64(image):
+    img_buffer = BytesIO()
+    image.save(img_buffer, format='JPEG')
+    byte_data = img_buffer.getvalue()
+    base64_str = base64.b64encode(byte_data)
+    return base64_str
+
 
 st.markdown(
     """
@@ -29,17 +43,17 @@ st.markdown(
 
 image = Image.open('image6.png')
 show = st.image(image, use_column_width=True)
+u_img = None
 
 st.sidebar.title("Upload Image")
 
-#Choose your own image
-uploaded_file = st.sidebar.file_uploader(" ",type=['png', 'jpg', 'jpeg'] )
+# Choose your own image
+uploaded_file = st.sidebar.file_uploader(" ", type=['png', 'jpg', 'jpeg'])
 if uploaded_file is not None:
-
     u_img = Image.open(uploaded_file)
     show.image(u_img, 'Uploaded Image', use_column_width=True)
     # We preprocess the image to fit in algorithm.
-    image = np.asarray(u_img)/255
+    image = np.asarray(u_img) / 255
 
 st.sidebar.text('\n')
 if st.sidebar.button("Click Here to Classify"):
@@ -49,24 +63,29 @@ if st.sidebar.button("Click Here to Classify"):
 
     else:
         with st.spinner('Classifying...'):
-            #mettre la prediction
+            encoded_img = pil_base64(u_img)
+            u_img.save("temp.jpg")
+
+            with open("temp.jpg", 'rb') as ff:
+                encoded_image = ff.read()
+            prediction = get_prediction(encoded_image)
+            predicted_name = prediction.payload[0].display_name
+            prediction_score = prediction.payload[0].classification
+            print(predicted_name)
+            print(prediction_score)
+            # mettre la prediction
             prediction = 0.7
             st.success('Done!')
 
         st.sidebar.header("Algorithm Predicts: ")
-        probability = "{:.3f}".format(float(prediction*100))
+        probability = "{:.3f}".format(float(prediction * 100))
 
-# Classify the bag being present in the picture if prediction > 0.5
-
+        # Classify the bag being present in the picture if prediction > 0.5
         if prediction > 0.5:
-
             st.sidebar.markdown("It's a '?' picture.")
             st.sidebar.markdown('**Probability in %: **')
             st.sidebar.text(probability)
-
-
         else:
-
             st.sidebar.markdown(" There is no bag in this picture ")
             st.sidebar.markdown('**Probability in %: **')
             st.sidebar.text(probability)
